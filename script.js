@@ -67,44 +67,247 @@ class CustomCursor {
     }
 }
 
-// Smooth Scrolling
+// GSAP Section-by-Section Scrolling
 class SmoothScroll {
     constructor() {
+        this.currentSection = 0;
+        this.isScrolling = false;
+        this.sections = [];
         this.init();
     }
     
     init() {
+        // Register GSAP plugins
+        gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+        
+        // Get all sections
+        this.sections = document.querySelectorAll('section');
+        
+        // Check if it's mobile device
+        this.isMobile = window.innerWidth <= 768;
+        
+        if (this.isMobile) {
+            // For mobile, only setup basic navigation
+            this.setupMobileNavigation();
+        } else {
+            // For desktop, setup section scrolling
+            this.setupSectionScrolling();
+            this.updateCurrentSection();
+        }
+        
+        // Setup navigation for both mobile and desktop
+        this.setupNavigation();
+        
+        // Listen for resize events
+        window.addEventListener('resize', () => {
+            const wasMobile = this.isMobile;
+            this.isMobile = window.innerWidth <= 768;
+            
+            // If switching between mobile and desktop, reinitialize
+            if (wasMobile !== this.isMobile) {
+                this.cleanup();
+                this.init();
+            }
+        });
+    }
+    
+    setupSectionScrolling() {
+        let scrollTimeout;
+        
+        // Store event handlers for cleanup
+        this.wheelHandler = (e) => {
+            if (this.isScrolling) return;
+            
+            const currentSection = this.sections[this.currentSection];
+            const sectionRect = currentSection.getBoundingClientRect();
+            const sectionTop = sectionRect.top;
+            const sectionBottom = sectionRect.bottom;
+            const windowHeight = window.innerHeight;
+            
+            // Check if we're at the boundaries of the current section
+            const atTop = sectionTop >= -10; // Small tolerance for floating point
+            const atBottom = sectionBottom <= windowHeight + 10; // Small tolerance
+            
+            // If scrolling down and at bottom of section, or scrolling up and at top of section
+            const shouldChangeSection = 
+                (e.deltaY > 0 && atBottom) || // Scrolling down and at bottom
+                (e.deltaY < 0 && atTop); // Scrolling up and at top
+            
+            if (shouldChangeSection) {
+                e.preventDefault();
+                
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const direction = e.deltaY > 0 ? 1 : -1;
+                    this.scrollToSection(this.currentSection + direction);
+                }, 100);
+            }
+        };
+        
+        this.keyHandler = (e) => {
+            if (this.isScrolling) return;
+            
+            // Only handle specific navigation keys for section jumping
+            if (e.key === 'PageDown') {
+                e.preventDefault();
+                this.scrollToSection(this.currentSection + 1);
+            } else if (e.key === 'PageUp') {
+                e.preventDefault();
+                this.scrollToSection(this.currentSection - 1);
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                this.scrollToSection(0);
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                this.scrollToSection(this.sections.length - 1);
+            }
+            // Allow arrow keys to scroll normally within sections
+        };
+        
+        // Add event listeners
+        document.addEventListener('wheel', this.wheelHandler, { passive: false });
+        document.addEventListener('keydown', this.keyHandler);
+    }
+    
+    setupMobileNavigation() {
+        // For mobile, just update current section based on scroll position
+        this.updateCurrentSection();
+    }
+    
+    scrollToSection(sectionIndex) {
+        // Clamp section index
+        sectionIndex = Math.max(0, Math.min(this.sections.length - 1, sectionIndex));
+        
+        if (sectionIndex === this.currentSection || this.isScrolling) return;
+        
+        this.isScrolling = true;
+        this.currentSection = sectionIndex;
+        
+        const targetSection = this.sections[sectionIndex];
+        
+        // Use GSAP ScrollTo plugin
+        gsap.to(window, {
+            duration: 0.4,
+            scrollTo: {
+                y: targetSection,
+                offsetY: 0
+            },
+            ease: "power1.inOut",
+            onComplete: () => {
+                this.isScrolling = false;
+            }
+        });
+        
+        // Update navigation active state
+        this.updateNavigation();
+    }
+    
+    updateCurrentSection() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                    const sectionIndex = Array.from(this.sections).indexOf(entry.target);
+                    if (sectionIndex !== -1 && !this.isScrolling) {
+                        this.currentSection = sectionIndex;
+                        this.updateNavigation();
+                    }
+                }
+            });
+        }, {
+            threshold: 0.5
+        });
+        
+        this.sections.forEach(section => observer.observe(section));
+    }
+    
+    updateNavigation() {
+        // Update active nav link
+        const navLinks = document.querySelectorAll('.nav-link');
+        const currentSectionId = this.sections[this.currentSection]?.id;
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${currentSectionId}`) {
+                link.classList.add('active');
+            }
+        });
+    }
+    
+    setupNavigation() {
         // Navigation smooth scroll
-        document.querySelectorAll('.nav-link').forEach(link => {
+        document.querySelectorAll('.nav-link').forEach((link, index) => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const targetId = link.getAttribute('href');
                 const targetSection = document.querySelector(targetId);
                 
                 if (targetSection) {
-                    gsap.to(window, {
-                        duration: 1.5,
-                        scrollTo: {
-                            y: targetSection,
-                            offsetY: 80
-                        },
-                        ease: 'power2.inOut'
-                    });
+                    if (this.isMobile) {
+                        // For mobile, use normal GSAP scroll with offset
+                        gsap.to(window, {
+                            duration: 0.8,
+                            scrollTo: {
+                                y: targetSection,
+                                offsetY: -80
+                            },
+                            ease: "power2.inOut"
+                        });
+                    } else {
+                        // For desktop, use section-by-section scrolling
+                        const sectionIndex = Array.from(this.sections).indexOf(targetSection);
+                        if (sectionIndex !== -1) {
+                            this.scrollToSection(sectionIndex);
+                        }
+                    }
                 }
             });
         });
         
         // Scroll indicator click
-        document.querySelector('.scroll-indicator').addEventListener('click', () => {
-            gsap.to(window, {
-                duration: 1.5,
-                scrollTo: {
-                    y: '#about',
-                    offsetY: 80
-                },
-                ease: 'power2.inOut'
+        const scrollIndicator = document.querySelector('.scroll-indicator');
+        if (scrollIndicator) {
+            scrollIndicator.addEventListener('click', () => {
+                if (this.isMobile) {
+                    gsap.to(window, {
+                        duration: 0.8,
+                        scrollTo: {
+                            y: '#about',
+                            offsetY: -80
+                        },
+                        ease: "power2.inOut"
+                    });
+                } else {
+                    this.scrollToSection(1); // Go to second section (about)
+                }
             });
-        });
+        }
+    }
+    
+    cleanup() {
+        // Remove event listeners if they exist
+        if (this.wheelHandler) {
+            document.removeEventListener('wheel', this.wheelHandler);
+        }
+        if (this.keyHandler) {
+            document.removeEventListener('keydown', this.keyHandler);
+        }
+        
+        // Reset properties
+        this.currentSection = 0;
+        this.isScrolling = false;
+    }
+    
+    // Utility methods
+    scrollTo(sectionIndex) {
+        this.scrollToSection(sectionIndex);
+    }
+    
+    getCurrentSection() {
+        return this.currentSection;
+    }
+    
+    getTotalSections() {
+        return this.sections.length;
     }
 }
 

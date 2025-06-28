@@ -7,7 +7,18 @@ class CustomCursor {
         this.cursor = document.querySelector('.cursor');
         this.cursorInner = document.querySelector('.cursor-inner');
         this.cursorOuter = document.querySelector('.cursor-outer');
-        this.hoverElements = document.querySelectorAll('.hover-effect, .nav-link, .social-link, .footer-link');
+        this.hoverElements = document.querySelectorAll('.hover-effect, .nav-link, .social-link, .footer-link, .btn, .project-card, .service-card, .gallery-item, .testimonial-card, .blog-card, .award-item, .filter-btn, .modal-close, .hamburger, a, button');
+        
+        // Trail system
+        this.trail = [];
+        this.trailLength = 8;
+        this.trailContainer = null;
+        
+        // Mouse position tracking
+        this.mouseX = 0;
+        this.mouseY = 0;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
         
         this.init();
     }
@@ -20,49 +31,204 @@ class CustomCursor {
             return;
         }
         
+        this.createTrailContainer();
         this.bindEvents();
         this.addHoverEffects();
+        this.startTrailAnimation();
+    }
+    
+    createTrailContainer() {
+        this.trailContainer = document.createElement('div');
+        this.trailContainer.className = 'cursor-trail';
+        document.body.appendChild(this.trailContainer);
     }
     
     bindEvents() {
         document.addEventListener('mousemove', (e) => {
+            this.mouseX = e.clientX;
+            this.mouseY = e.clientY;
+            
+            // Smooth cursor movement with enhanced easing
             gsap.to(this.cursorInner, {
-                x: e.clientX,
-                y: e.clientY,
+                x: this.mouseX,
+                y: this.mouseY,
                 duration: 0.1,
                 ease: 'power2.out'
             });
             
             gsap.to(this.cursorOuter, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.3,
+                x: this.mouseX,
+                y: this.mouseY,
+                duration: 0.4,
                 ease: 'power2.out'
             });
+            
+            // Create trail effect
+            this.createTrailDot();
         });
         
         document.addEventListener('mousedown', () => {
-            gsap.to(this.cursorInner, { scale: 1.5, duration: 0.1 });
-            gsap.to(this.cursorOuter, { scale: 0.8, duration: 0.1 });
+            gsap.to(this.cursorInner, { 
+                scale: 1.8, 
+                duration: 0.15,
+                ease: 'back.out(1.7)'
+            });
+            gsap.to(this.cursorOuter, { 
+                scale: 0.7, 
+                duration: 0.15,
+                ease: 'back.out(1.7)'
+            });
         });
         
         document.addEventListener('mouseup', () => {
-            gsap.to(this.cursorInner, { scale: 1, duration: 0.1 });
-            gsap.to(this.cursorOuter, { scale: 1, duration: 0.1 });
+            gsap.to(this.cursorInner, { 
+                scale: 1, 
+                duration: 0.2,
+                ease: 'elastic.out(1, 0.3)'
+            });
+            gsap.to(this.cursorOuter, { 
+                scale: 1, 
+                duration: 0.2,
+                ease: 'elastic.out(1, 0.3)'
+            });
         });
+        
+        // Add mouse leave/enter effects
+        document.addEventListener('mouseleave', () => {
+            gsap.to([this.cursorInner, this.cursorOuter], {
+                opacity: 0,
+                duration: 0.3
+            });
+        });
+        
+        document.addEventListener('mouseenter', () => {
+            gsap.to([this.cursorInner, this.cursorOuter], {
+                opacity: 1,
+                duration: 0.3
+            });
+        });
+    }
+    
+    createTrailDot() {
+        // Only create trail if mouse has moved significantly
+        const distance = Math.sqrt(
+            Math.pow(this.mouseX - this.lastMouseX, 2) + 
+            Math.pow(this.mouseY - this.lastMouseY, 2)
+        );
+        
+        if (distance > 8) {
+            const dot = document.createElement('div');
+            dot.className = 'trail-dot';
+            dot.style.left = this.mouseX + 'px';
+            dot.style.top = this.mouseY + 'px';
+            
+            this.trailContainer.appendChild(dot);
+            
+            // Remove dot after animation
+            setTimeout(() => {
+                if (dot.parentNode) {
+                    dot.parentNode.removeChild(dot);
+                }
+            }, 800);
+            
+            this.lastMouseX = this.mouseX;
+            this.lastMouseY = this.mouseY;
+        }
+    }
+    
+    startTrailAnimation() {
+        // Animate trail dots with staggered delay
+        gsap.set('.trail-dot', {
+            scale: 0,
+            opacity: 0
+        });
+        
+        // Observer for new trail dots
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.classList && node.classList.contains('trail-dot')) {
+                        gsap.fromTo(node, {
+                            scale: 0,
+                            opacity: 0.8
+                        }, {
+                            scale: 1,
+                            opacity: 0,
+                            duration: 0.8,
+                            ease: 'power2.out'
+                        });
+                    }
+                });
+            });
+        });
+        
+        observer.observe(this.trailContainer, { childList: true });
     }
     
     addHoverEffects() {
         this.hoverElements.forEach(el => {
             el.addEventListener('mouseenter', () => {
                 this.cursorOuter.classList.add('hover');
-                gsap.to(this.cursorInner, { scale: 0.5, duration: 0.2 });
+                this.cursorInner.classList.add('hover');
+                
+                gsap.to(this.cursorInner, { 
+                    scale: 0.6, 
+                    duration: 0.3,
+                    ease: 'back.out(1.7)'
+                });
+                
+                // Add magnetic effect
+                this.addMagneticEffect(el);
             });
             
             el.addEventListener('mouseleave', () => {
                 this.cursorOuter.classList.remove('hover');
-                gsap.to(this.cursorInner, { scale: 1, duration: 0.2 });
+                this.cursorInner.classList.remove('hover');
+                
+                gsap.to(this.cursorInner, { 
+                    scale: 1, 
+                    duration: 0.3,
+                    ease: 'elastic.out(1, 0.3)'
+                });
+                
+                // Remove magnetic effect
+                this.removeMagneticEffect(el);
             });
+        });
+    }
+    
+    addMagneticEffect(element) {
+        const handleMouseMove = (e) => {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const deltaX = (e.clientX - centerX) * 0.1;
+            const deltaY = (e.clientY - centerY) * 0.1;
+            
+            gsap.to(element, {
+                x: deltaX,
+                y: deltaY,
+                duration: 0.3,
+                ease: 'power2.out'
+            });
+        };
+        
+        element.addEventListener('mousemove', handleMouseMove);
+        element._magneticHandler = handleMouseMove;
+    }
+    
+    removeMagneticEffect(element) {
+        if (element._magneticHandler) {
+            element.removeEventListener('mousemove', element._magneticHandler);
+            delete element._magneticHandler;
+        }
+        
+        gsap.to(element, {
+            x: 0,
+            y: 0,
+            duration: 0.5,
+            ease: 'elastic.out(1, 0.3)'
         });
     }
 }

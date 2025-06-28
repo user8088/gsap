@@ -19,6 +19,11 @@ body {
     cursor: none;
 }
 
+/* Ensure custom cursor stays on all interactive elements */
+a, button, input, textarea, select, .btn, .nav-link, .project-link, .social-link, .filter-btn, .modal-close, .hamburger, .gallery-item, .testimonial-card, .service-card, .project-card, .blog-card, .award-item, [onclick], [role="button"], [tabindex]:not([tabindex="-1"]) {
+    cursor: none !important;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -35,34 +40,86 @@ body {
 }
 
 .cursor-inner {
-    width: 8px;
-    height: 8px;
-    background: #ff6b6b;
-    border-radius: 50%;
-    position: absolute;
-    mix-blend-mode: difference;
-    transition: transform 0.1s ease;
-}
-
-.cursor-outer {
-    width: 40px;
-    height: 40px;
-    border: 2px solid rgba(255, 107, 107, 0.3);
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
     border-radius: 50%;
     position: absolute;
     transform: translate(-50%, -50%);
-    transition: all 0.3s ease;
-    animation: cursorPulse 2s infinite;
+    mix-blend-mode: difference;
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.6), 0 0 30px rgba(255, 107, 107, 0.3);
+}
+
+.cursor-outer {
+    width: 50px;
+    height: 50px;
+    border: 2px solid rgba(255, 107, 107, 0.4);
+    border-radius: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: cursorPulse 3s ease-in-out infinite;
+    background: radial-gradient(circle, rgba(255, 107, 107, 0.05) 0%, transparent 70%);
+}
+
+/* Cursor trail elements */
+.cursor-trail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 9998;
+}
+
+.trail-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    border-radius: 50%;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    animation: trailFade 0.8s ease-out forwards;
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
 }
 
 @keyframes cursorPulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); }
-    50% { transform: translate(-50%, -50%) scale(1.1); }
+    0%, 100% { 
+        transform: translate(-50%, -50%) scale(1);
+        border-color: rgba(255, 107, 107, 0.4);
+    }
+    33% { 
+        transform: translate(-50%, -50%) scale(1.1);
+        border-color: rgba(255, 107, 107, 0.6);
+    }
+    66% { 
+        transform: translate(-50%, -50%) scale(1.05);
+        border-color: rgba(78, 205, 196, 0.4);
+    }
+}
+
+@keyframes trailFade {
+    0% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.3);
+    }
 }
 
 .cursor-outer.hover {
-    transform: translate(-50%, -50%) scale(1.5);
-    background: rgba(255, 107, 107, 0.1);
+    transform: translate(-50%, -50%) scale(1.6);
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.8);
+    box-shadow: 0 0 25px rgba(255, 107, 107, 0.4), 0 0 50px rgba(255, 107, 107, 0.2);
+}
+
+.cursor-inner.hover {
+    transform: translate(-50%, -50%) scale(1.3);
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.8), 0 0 40px rgba(255, 107, 107, 0.5);
 }
 
 /* Navigation */

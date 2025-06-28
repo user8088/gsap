@@ -1701,10 +1701,129 @@ class PerformanceMonitor {
     }
 }
 
+// Image Modal Class
+class ImageModal {
+    constructor() {
+        this.modal = document.getElementById('imageModal');
+        this.modalImage = document.getElementById('modalImage');
+        this.modalTitle = document.getElementById('modalTitle');
+        this.modalDescription = document.getElementById('modalDescription');
+        this.closeBtn = document.querySelector('.modal-close');
+        this.backdrop = document.querySelector('.modal-backdrop');
+        
+        this.init();
+    }
+    
+    init() {
+        this.bindEvents();
+        this.setupGalleryImages();
+    }
+    
+    bindEvents() {
+        // Close modal events
+        this.closeBtn.addEventListener('click', () => this.closeModal());
+        this.backdrop.addEventListener('click', () => this.closeModal());
+        
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.classList.contains('active')) {
+                this.closeModal();
+            }
+        });
+        
+        // Prevent modal content clicks from closing modal
+        this.modal.querySelector('.modal-content').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+    
+    setupGalleryImages() {
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        
+        galleryItems.forEach(item => {
+            const img = item.querySelector('.gallery-image img');
+            const title = item.querySelector('.gallery-overlay h4').textContent;
+            const description = item.querySelector('.gallery-overlay p').textContent;
+            
+            if (img) {
+                // Make gallery item clickable
+                item.style.cursor = 'pointer';
+                
+                // Add click event to the entire gallery item
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.openModal(img.src, img.alt, title, description);
+                });
+                
+                // Add hover effect to indicate clickability
+                item.addEventListener('mouseenter', () => {
+                    gsap.to(img, { scale: 1.05, duration: 0.3 });
+                });
+                
+                item.addEventListener('mouseleave', () => {
+                    gsap.to(img, { scale: 1, duration: 0.3 });
+                });
+            }
+        });
+    }
+    
+    openModal(imageSrc, imageAlt, title, description) {
+        // Set modal content
+        this.modalImage.src = imageSrc;
+        this.modalImage.alt = imageAlt;
+        this.modalTitle.textContent = title;
+        this.modalDescription.textContent = description;
+        
+        // Show modal with animation
+        this.modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        
+        // Animate modal appearance
+        gsap.fromTo(this.modal.querySelector('.modal-content'), 
+            { 
+                scale: 0.8,
+                opacity: 0
+            },
+            { 
+                scale: 1,
+                opacity: 1,
+                duration: 0.3,
+                ease: 'power2.out'
+            }
+        );
+        
+        // Animate backdrop blur
+        gsap.fromTo(this.backdrop,
+            { opacity: 0 },
+            { opacity: 1, duration: 0.3 }
+        );
+    }
+    
+    closeModal() {
+        // Animate modal disappearance
+        gsap.to(this.modal.querySelector('.modal-content'), {
+            scale: 0.8,
+            opacity: 0,
+            duration: 0.3,
+            ease: 'power2.in'
+        });
+        
+        gsap.to(this.backdrop, {
+            opacity: 0,
+            duration: 0.3,
+            onComplete: () => {
+                this.modal.classList.remove('active');
+                document.body.style.overflow = ''; // Restore scrolling
+            }
+        });
+    }
+}
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new PerformanceMonitor();
     new PageLoader();
+    new ImageModal();
 });
 
 // Handle window resize
